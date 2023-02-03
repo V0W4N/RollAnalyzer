@@ -2,7 +2,7 @@
 **TO RESET THE INPUTS, PRESS `"resetKey"` SET IN `settings.json`**
 
 
-An fully customizable application that shows you your rolling info.
+A fully customizable application that shows you your rolling info.
 
 This application was made for the sole purpose of analyzing your rolling style for games like **Osu!** and **ADOFAI**, showing your inaccuracy while performing constant input sequences.
 The **`roll.exe`** will create `settings.json` and `keys.json` files upon first launch in the folder the executable is in. 
