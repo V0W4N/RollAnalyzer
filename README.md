@@ -13,5 +13,9 @@ On this diagram you can see what most parts of the app mean.
 
 **`settings.json`** has many settings, most of them are explained in the file itself with comment under each setting, and other ones are intuitive enough to figure out.
 Feel free to dm me on discord if you find bugs or have suggestions (i rarely check github comments but you can leave those too)
+i will update it occasionally
 
-(i will update it occasionally)
+
+# Updates
+
+**Patch 1:** fixed memory leak due to raindrops not getting removed after leaving the screen (found by **dropsy#1796**)
