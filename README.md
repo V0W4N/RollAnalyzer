@@ -20,3 +20,6 @@ i will update it occasionally
 
 **Patch 1:** fixed memory leak due to raindrops not getting removed after leaving the screen (found by **dropsy#1796**)
 **Patch 2:** covered up shimmer bug when keyviewer bars approach the end of the screen
+
+compiled using pyinstaller and this command:
+`pyinstaller --onefile --windowed --add-data "icon32.png;." --add-data "icon.png;." --hidden-import=pygame main.py`
