@@ -1,64 +1,76 @@
-import pygame as pg, json, os, math, sys
+import pygame as pg, json, os, math, sys, keyboard
 from sys import exit
+from threading import Thread
 
-pg.init()
 # screen size
-dim = (1400, 720)
+dim = (1500, 800)
 currDir = os.getcwd()
 if hasattr(sys, "_MEIPASS"):
     os.chdir(sys._MEIPASS)
 
 defaultSettings = {
-  "resetKey" : "right shift",
-  "--------- key for instantly resetting all counters": None,
-  "size" : 50,
-  "--------- size of the key squares and other miscellaneous": None,
-  "gap" : -1,
-  "--------- gap between them": None,
-  "fps" : 240,
-  "rainSpeed" : 600,
-  "accMaxTime" : 15000,
-  "--------- maximum time for kps to be accumulating inputs": None,
-  "accTimeout" : 1000,
-  "--------- timeout for kps before resetting": None,
-  "seqTimeout" : 25000,
-  "--------- timeout for sequencer before resetting" : None,
-  "seqAcc" : 20,
-  "--------- maximum amount of inputs stored in sequencer" : None,
-  "heightMtp" : 2,
-  "--------- height of the sequencer bars" : None,
-  "decPlaces" : 2,
-  "--------- number of decimal places in kps" : None,
+    "resetKey": "right shift",
+    "--------- key for instantly resetting all counters": None,
+    "size": 50,
+    "--------- size of the key squares and other miscellaneous": None,
+    "gap": -1,
+    "--------- gap between them": None,
+    "fps": 60,
+    "rainSpeed": 600,
+    "accMaxTime": 15000,
+    "--------- maximum time for kps to keep accumulating inputs": None,
+    "accTimeout": 1000,
+    "--------- timeout for kps before resetting": None,
+    "seqTimeout": 20000,
+    "--------- timeout for sequencer before resetting": None,
+    "seqAcc": 20,
+    "--------- maximum amount of inputs stored in sequencer": None,
+    "heightMtp": 1,
+    "--------- height of the sequencer bars": None,
+    "gradientStart" : 300,
+    "--------- height at which gradient starts hiding keys": None,
+    "gradientHeight" : 70,
+    "decPlaces": 2,
+    "--------- number of decimal places in kps": None,
 
-  "colorDown" : [140, 0, 0],
-  "colorUp" : [100, 100, 100],
-  "rainColor" : [100, 0, 0]
+    "colorDown": [140, 0, 0],
+    "colorUp": [100, 100, 100],
+    "rainColor": [100, 0, 0]
 }
 
 iconPath = "icon32.png"
 path = "settings.json"
 keyPath = "keys.json"
 validity = True
-defaultKeys = [97, 115, 100, 118, 110, 107, 108, 59]
+defaultKeys = [[30, "a"],
+               [31, "s"],
+               [32, "d"],
+               [47, "v"],
+               [49, "n"],
+               [37, "k"],
+               [38, "l"],
+               [39, ";"]]
 
 stg = {
-       "resetKey": "right shift",
-       "size": 50,
-       "gap": 5,
-       "fps": 240,
-       "rainSpeed": 600,
-       "accMaxTime": 15000,
-       "accTimeout": 1000,
-       "seqTimeout": 25000,
-       "seqAcc": 20,
-       "heightMtp": 2,
-       "decPlaces": 2,
-       "colorDown" : [140, 0, 0],
-       "colorUp" : [100, 100, 100],
-       "rainColor" : [100, 0, 0]
-       }
-path = currDir+"\\"+path
-keyPath = currDir+"\\"+keyPath
+    "resetKey": "right shift",
+    "size": 50,
+    "gap": -1,
+    "fps": 60,
+    "rainSpeed": 700,
+    "accMaxTime": 15000,
+    "accTimeout": 1000,
+    "seqTimeout": 20000,
+    "seqAcc": 20,
+    "heightMtp": 1,
+    "decPlaces": 2,
+    "gradientStart" : 300,  # height at which gradient starts hiding keys
+    "gradientHeight" : 70,
+    "colorDown": [140, 0, 0],
+    "colorUp": [100, 100, 100],
+    "rainColor": [100, 0, 0]
+}
+path = currDir + "\\" + path
+keyPath = currDir + "\\" + keyPath
 
 if not os.path.isfile(path):
     file = open(path, "w+")
@@ -85,28 +97,29 @@ if os.path.isfile(path) and os.path.isfile(keyPath):
         keysFile.close()
     except Exception:
         validity = False
-        stg.update({"keys":defaultKeys})
+        stg.update({"keys": defaultKeys})
 
 else:
-    stg.update({"keys":defaultKeys})
+    stg.update({"keys": defaultKeys})
     validity = False
-
-
 
 keys = stg["keys"] if stg["keys"] else defaultKeys
 try:
-    resetKey = pg.key.key_code(stg["resetKey"])  # key for instantly resetting all counters
+    resetKey = [keyboard.key_to_scan_codes(stg["resetKey"])[0], stg["resetKey"]]  # key for instantly resetting all counters
 except ValueError:
-    resetKey = pg.key.key_code("right shift")
+    resetKey = [keyboard.key_to_scan_codes("right shift")[0], stg["resetKey"]]
 
 setKeys = False
 size = 50
-font = pg.font.SysFont("Arial", 1)
+font = None
+
+
 def setSize(keys):
     global size, font, startPos
-    size = stg["size"]*4/math.sqrt(len(keys)+1)  # size of the key squares
-    font = pg.font.SysFont("Arial", int(math.sqrt(size*5)))
-    startPos = (size, dim[1] - size*2 - 50)
+    size = stg["size"] * 4 / math.sqrt(len(keys) + 1)  # size of the key squares
+    font = pg.font.SysFont("Arial", int(math.sqrt(size * 12)))
+    startPos = (size/2, dim[1] - size - 10)
+
 
 gap = stg["gap"]  # gap between them
 fps = stg["fps"]
@@ -117,6 +130,8 @@ seqTimeout = stg["seqTimeout"]  # timeout for sequencer before resetting
 seqAcc = stg["seqAcc"]  # maximum amount of inputs stored in sequencer
 heightMtp = stg["heightMtp"]  # height of the sequencer bars
 decPlaces = stg["decPlaces"]  # number of decimal places in kps
+gradientStart = stg["gradientStart"]  # height at which gradient starts hiding keys
+gradientHeight = stg["gradientHeight"]
 
 colorDown = stg["colorDown"]
 colorUp = stg["colorUp"]
@@ -133,6 +148,7 @@ shorten = {
     "caps lock": "caps"
 }
 
+pg.init()
 setSize(keys)
 icon = pg.image.load(iconPath)
 pg.display.set_caption("Roll Analyzer")
@@ -143,14 +159,46 @@ rainSpeed = round(rainSpeed / fps)
 miscFont = pg.font.SysFont("Arial", 25)
 keyArray = []
 currList = []
+ACKNOWLEDGED = 2
+
+gradient = pg.Surface((2, 2), pg.SRCALPHA)
+pg.draw.line(gradient, (0, 0, 0, 255), (0, 0), (1, 0))  # top
+pg.draw.line(gradient, (0, 0, 0, 0), (0, 1), (1, 1))  # bottom
+gradient = pg.transform.smoothscale(gradient, (dim[0], gradientHeight))
+gradientSurf = pg.Surface(dim, pg.SRCALPHA)
+gradientSurf.blit(gradient, (0,dim[1]-gradientStart))
+pg.draw.rect(gradientSurf, (0,0,0), pg.Rect(0,0,dim[0],dim[1]-gradientStart))
+
+
+class Keylog:
+    def __init__(self):
+        self.keys = {code: [name, False, False] for code, name in keys}
+        self.recent = []
+        Thread(target=self.read, args=(), daemon=True).start()
+
+    def read(self):
+        while 1:
+            event = keyboard.read_event()
+            self.recent = [event.scan_code, event.name]
+            if event.event_type == keyboard.KEY_DOWN and event.scan_code in self.keys:
+                self.keys[event.scan_code][1] = True
+                self.keys[event.scan_code][ACKNOWLEDGED] = False
+                self.recent = [event.scan_code, event.name]
+
+            if event.event_type == keyboard.KEY_UP and event.scan_code in self.keys:
+                self.keys[event.scan_code][1] = False
+                self.keys[event.scan_code][ACKNOWLEDGED] = False
+
+
 
 
 def setK():
     global setKeys, keys, validity
-    sizeSet = stg["size"] * 4 / math.sqrt(len(keys)+1)
-    txt = miscFont.render(f"Press \"{pg.key.name(resetKey)}\" to finish", True, (255,255,255))
-    txtPos = (dim[0]/2 - txt.get_rect().width/2, 5)
+    sizeSet = stg["size"] * 4 / math.sqrt(len(keys) + 1)
+    txt = miscFont.render(f"Press \"{resetKey[1]}\" to finish", True, (255, 255, 255))
+    txtPos = (dim[0] / 2 - txt.get_rect().width / 2, 5)
     currList = []
+
     while setKeys:
         screen.fill((0, 0, 0))
 
@@ -159,8 +207,8 @@ def setK():
                 pg.quit()
                 exit()
             if event.type == pg.KEYDOWN:
-                id = event.__dict__["key"]
-                if id == resetKey:
+                code = klog.recent[0]
+                if code == resetKey[0]:
                     try:
                         file = open(keyPath, "r+")
                         data = json.load(file)
@@ -170,21 +218,23 @@ def setK():
                         file.seek(0)
                         file.write(json.dumps(data, ensure_ascii=False))
                         file.close()
-                        setSize(currList)
                         setKeys = False
                         break
                     except Exception:
                         validity = False
                         break
-                if id in currList:
-                    currList.remove(id)
+                if klog.recent in currList:
+                    currList.remove(klog.recent)
+                    setSize(currList)
                 else:
-                    currList.append(id)
-                sizeSet = stg["size"] * 4 / math.sqrt(len(currList)+1)
+                    currList.append(klog.recent)
+                    setSize(currList)
+                sizeSet = stg["size"] * 4 / math.sqrt(len(currList) + 1)
+
         if currList:
-            pos = [dim[0]/2 - len(currList)*(sizeSet+gap)/2, dim[1]/2-sizeSet/2]
+            pos = [dim[0] / 2 - len(currList) * (sizeSet + gap) / 2, dim[1] / 2 - sizeSet / 2]
             for key in currList:
-                keyName = pg.key.name(key)
+                keyName = key[1]
                 label = shorten[keyName] if keyName in shorten.keys() else keyName
                 text = font.render(label, True, (255, 255, 255))
                 rect = pg.Rect(pos, (sizeSet, sizeSet))
@@ -199,22 +249,29 @@ def setK():
         pg.display.flip()
 
 
-
-def foo(pos, key, arr):
+def createKeyArr(pos, key, arr):
     if key < len(keys):
-        arr.append(KeyRect(keys[key], (size, size), pos))
-        foo((pos[0] + size + gap, pos[1]), key + 1, arr)
+        arr.append(KeyRect(keys[key][0], keys[key][1], (size, size), pos))
+        createKeyArr((pos[0] + size + gap, pos[1]), key + 1, arr)
+
 
 def setup():
-    global keysStrArr, keyCount, keyArray, kps, fpsC, seq, changeBtn
-    keyArray = []
-    foo(startPos, 0, keyArray)
-    keysStrArr = [pg.key.name(key) for key in keys]
-    keyCount = len(keys)
-    kps = KPS(decPlaces, (dim[0] - 2 * size - gap, dim[1] - size - gap))
-    fpsC = FPS()
-    seq = KeySequencer(keyArray, keys)
-    changeBtn = KeyChange((keyArray[0].Rect.left, keyArray[-1].Rect.right), keyArray[0].Rect.bottom)
+    global keyCount, keyArray, kps, fpsC, seq, changeBtn, klog, keys
+    try:
+        keyArray = []
+        createKeyArr(startPos, 0, keyArray)
+        keyCount = len(keys)
+        kps = KPS(decPlaces, (dim[0] - 2 * size - gap, dim[1] - size - gap))
+        fpsC = FPS()
+        seq = KeySequencer(keyArray, keys)
+        changeBtn = KeyChange(keyArray[-1].Rect.right, keyArray[0].Rect.bottom)
+        klog = Keylog()
+    except TypeError:
+        keys = defaultKeys
+        stg = defaultSettings
+        setup()
+
+
 
 class Rain:
     def __init__(self, pos, xsize):
@@ -236,9 +293,9 @@ class Rain:
 
 
 class KeyRect:
-    def __init__(self, id, size, pos):
-        self.id = id
-        keyName = pg.key.name(id)
+    def __init__(self, code, name, size, pos):
+        self.code = code
+        keyName = name
         self.label = shorten[keyName] if keyName in shorten.keys() else keyName
         self.text = font.render(self.label, True, (255, 255, 255))
         self.Rect = pg.Rect(pos, size)
@@ -263,7 +320,6 @@ class KeyRect:
                 drop.draw()
                 if drop.rect.size[1] + drop.rect.y < -200:
                     self.raindrops.pop(self.raindrops.index(drop))
-
 
 
 class KPS:
@@ -342,7 +398,7 @@ class FPS:
 class KeySequencer:
     def __init__(self, keyArray, keys):
         width = (keyArray[-1].Rect.right - keyArray[0].Rect.left) / 2
-        self.keys = keys
+        self.keys = [key[0] for key in keys]
         self.barWidth = round(width / len(keyArray))
         self.startPts = [dim[0] - size - width + self.barWidth * n for n in range(len(keyArray))]
         self.sequence = {}
@@ -360,32 +416,28 @@ class KeySequencer:
             text = ""
             errText = ""
             h = 1
-            avgH = self.avg * heightMtp
+            avgH = (self.avg * heightMtp)**1/2
             if self.keys[dot] in self.timing.keys():
                 if self.timing[self.keys[dot]]:
-                    h = self.timing[self.keys[dot]] * heightMtp
+                    h = (self.timing[self.keys[dot]] * heightMtp)**1/2
                     text = str(round(self.timing[self.keys[dot]], 1))
                     errText = str(round(self.avgErr[self.keys[dot]], 1))
 
             pg.draw.rect(screen, (255, 255, 255), pg.Rect((self.startPts[dot], self.height, self.barWidth, h)), 2)
 
-            pg.draw.line(screen, (100,255,100),
-                                 (self.startPts[0], self.height+avgH),
-                                 (self.startPts[-1]+self.barWidth, self.height+avgH))
-
+            pg.draw.line(screen, (100, 255, 100),
+                         (self.startPts[0], self.height + avgH),
+                         (self.startPts[-1] + self.barWidth, self.height + avgH))
 
             textRect = self.msFont.render(text, True, (255, 255, 255))
             pos = (self.startPts[dot] + self.barWidth / 2 - textRect.get_rect().width / 2,
                    self.height - self.msFont.get_height())
             screen.blit(textRect, pos)
 
-
             textRect = self.msFont.render(errText, True, (255, 255, 255))
             pos = (self.startPts[dot] + self.barWidth / 2 - textRect.get_rect().width / 2,
                    self.height + h + self.msFont.get_height())
             screen.blit(textRect, pos)
-
-
 
     def check(self, time):
         if self.timings:
@@ -410,8 +462,6 @@ class KeySequencer:
             self.timing.update({key: 0})
             self.avgErr.update({key: 0})
 
-
-
     def update(self, key, time):
         self.timings.append(time)
 
@@ -434,8 +484,6 @@ class KeySequencer:
             for k in list(self.avgErr.keys()):
                 self.avgErr[k] = self.timing[k] - self.avg
 
-
-
     def reset(self):
         self.sequence = {}
         self.timing = {}
@@ -445,19 +493,20 @@ class KeySequencer:
 
 
 class KeyChange:
-    def __init__(self, bar, height):
-        size = 50
-        center = (bar[1]+bar[0])/2, height+size
-        self.size = (size*4,size)
-        self.rect = pg.Rect((0,0),self.size)
-        self.rect.center = center
-        self.hover = [int(c/3) for c in colorUp]
+    def __init__(self, edge, height):
+        size = 40
+        self.size = (size * 4, size)
+        pos = edge + 20, height - size
+        self.rect = pg.Rect((0, 0), self.size)
+        self.rect.topleft = pos
+        self.hover = [int(c / 3) for c in colorUp]
+        self.edge = [int(c / 0.7) for c in colorUp]
         self.color = colorUp
-        self.text = miscFont.render("Change keys", True, (255,255,255))
+        self.text = miscFont.render("Change keys", True, (255, 255, 255))
 
     def render(self):
         pg.draw.rect(screen, self.color, self.rect)
-        pg.draw.rect(screen, (255,255,255), self.rect, 3)
+        pg.draw.rect(screen, self.edge, self.rect, 3)
         screen.blit(self.text,
                     (self.rect.centerx - self.text.get_rect().centerx,
                      self.rect.centery - self.text.get_rect().centery)
@@ -475,8 +524,6 @@ class KeyChange:
             self.color = colorUp
 
 
-
-
 def main():
     setK()
     setup()
@@ -486,41 +533,36 @@ def main():
     if not validity:
         vdtyCounter = 0
 
+    focus = True
     while 1:
         if setKeys:
             setK()
             setup()
 
         screen.fill((0, 0, 0))
+        for key in keyArray:
+            key.rain(key.state)
+        screen.blit(gradientSurf, (0,0))
         changeBtn.checkClick()
         changeBtn.render()
         if vdtyCounter is not None:
             if vdtyCounter < vdtyTime:
-                opacity = -((vdtyCounter / vdtyTime) ** 8) + 1
+                opacity = 1 - ((vdtyCounter / vdtyTime) ** 8)
                 vdtyCounter += 1
                 textRect = miscFont.render("Invalid json or doesnt exist! (settings.json / keys.json)", True,
-                                       (int(255 * opacity), int(255 * opacity), int(255 * opacity)))
+                                           (255 * opacity, 255 * opacity, 255 * opacity))
                 screen.blit(textRect, (dim[0] / 2 - textRect.get_rect().midleft[0] - textRect.get_rect().width / 2,
                                        dim[1] / 2 - textRect.get_rect().topleft[1] - textRect.get_rect().height / 2))
 
         fpsC.tick(clock.tick(fps))
-        for event in pg.event.get():
-            id = 0
-            key = None
-            if event.type == pg.QUIT:
-                pg.quit()
-                exit()
-            if event.type == pg.KEYDOWN or event.type == pg.KEYUP:
-                id = event.__dict__["key"]
-                if id in keys:
-                    place = keys.index(id)
-                    key = keyArray[place]
-            if id == resetKey:
-                kps.check(9999999999)  # reset
-                seq.reset()
-            if id in keys:
-                if not key.state:
-                    seq.update(id, pg.time.get_ticks())
+        for k in keys:
+            code = k[0]
+            if not klog.keys[code][ACKNOWLEDGED]:
+                klog.keys[code][ACKNOWLEDGED] = True
+                place = keys.index(k)
+                key = keyArray[place]
+                if klog.keys[code][1]:
+                    seq.update(code, pg.time.get_ticks())
                     key.addRain()
                     key.color = colorDown
                     kps.add(pg.time.get_ticks())
@@ -528,10 +570,15 @@ def main():
                 else:
                     key.color = colorUp
                     key.state = 0
+            if klog.recent == resetKey:
+                kps.check(99999999999999)  # reset
+                seq.reset()
+        for event in pg.event.get():
+            if event.type == pg.QUIT:
+                pg.quit()
+                exit()
         for key in keyArray:
-            key.rain(key.state)
             key.draw()
-
         kps.check(pg.time.get_ticks())
         seq.check(pg.time.get_ticks())
         fpsC.render()
