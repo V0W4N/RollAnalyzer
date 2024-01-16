@@ -20,10 +20,17 @@ Select the app
 
 ![window](https://github.com/V0W4N/RollAnalyzer/assets/59146442/cd3f4df2-9c68-44c1-bb83-e0e66a466dfc)
 ## Step 3:
-Select `Additive` blending mode
+Select `Filters` then add `Color key` filter
 
-![image](https://github.com/V0W4N/RollAnalyzer/assets/59146442/15a457fb-225d-4984-b11c-7f8661338d4b)
+![image](https://github.com/V0W4N/RollAnalyzer/assets/59146442/a6225676-2466-4255-b994-e812b8f8efd7)
 
+![image](https://github.com/V0W4N/RollAnalyzer/assets/59146442/8995b959-a494-47f9-b69d-d852a0e9d7b8)
+
+
+## Step 4:
+Put those settings in, and play around with `Smoothness` to get the fade look like you want
+
+![image](https://github.com/V0W4N/RollAnalyzer/assets/59146442/0956cb4a-09c3-418c-85fa-3482098c01ce)
 
 
 **`settings.json`** has many settings, most of them are explained in the file itself with comment under each setting, and other ones are intuitive enough to figure out.
