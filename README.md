@@ -28,7 +28,7 @@ Select `Filters` then add `Color key` filter
 
 
 ## Step 4:
-Put those settings in, and play around with `Smoothness` to get the fade look like you want
+Put these settings in, and play around with `Smoothness` to get the fade look like you want it to
 
 ![image](https://github.com/V0W4N/RollAnalyzer/assets/59146442/0956cb4a-09c3-418c-85fa-3482098c01ce)
 
@@ -44,7 +44,8 @@ i will update it occasionally
 
 **Patch 2:** covered up shimmer bug when keyviewer bars approach the end of the screen
 
+**Patch 3:** fixed list indexing error when setting keys (found by **senatorial**)
+
 ***UPDATE 1:*** Changed keyboard hook library to **`keyboard`** to listen for inputs regardless of window being in focus
 
-compiled using pyinstaller and this command:
-`pyinstaller --onefile --windowed --add-data "icon32.png;." --add-data "icon.png;." --hidden-import=pygame main.py`
+compiled using pyinstaller
