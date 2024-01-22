@@ -206,7 +206,7 @@ def setK():
             if event.type == pg.QUIT:
                 pg.quit()
                 exit()
-            if event.type == pg.KEYDOWN:
+            if event.type == pg.KEYDOWN and klog.recent:
                 code = klog.recent[0]
                 if code == resetKey[0]:
                     try:
@@ -403,12 +403,13 @@ class KeySequencer:
         self.startPts = [dim[0] - size - width + self.barWidth * n for n in range(len(keyArray))]
         self.sequence = {}
         self.timing = {}
+        self.recentKeys = {}
         self.avgErr = {}
         self.avg = 0
         self.timings = []
         self.height = 100
         self.endLinePos = (dim[0] - size, self.height), width
-        self.msFont = pg.font.SysFont('Arial', int(self.barWidth / 3))
+        self.msFont = pg.font.SysFont('Arial', int(self.barWidth / 2.2))
 
     def render(self):
 
@@ -416,10 +417,13 @@ class KeySequencer:
             text = ""
             errText = ""
             h = 1
-            avgH = (self.avg * heightMtp)**1/2
+            adjustment = 100
+            heightAdj = heightMtp * adjustment
+            base = adjustment
+            avgH = math.log( self.avg+1, base) * heightAdj
             if self.keys[dot] in self.timing.keys():
                 if self.timing[self.keys[dot]]:
-                    h = (self.timing[self.keys[dot]] * heightMtp)**1/2
+                    h = math.log(self.timing[self.keys[dot]]+1, base) * heightAdj
                     text = str(round(self.timing[self.keys[dot]], 1))
                     errText = str(round(self.avgErr[self.keys[dot]], 1))
 
@@ -443,23 +447,25 @@ class KeySequencer:
         if self.timings:
             if time - self.timings[-1] > seqTimeout:
                 self.reset()
+        self.clearOld(time)
 
-    def clearOld(self, key, time):
-        if len(self.sequence[key]) > seqAcc:
-            self.sequence[key].pop(0)
-            self.clearOld(key, time)
-
-        elif self.timings[0] < time - seqTimeout:
-            self.timings.pop(0)
-            self.clearOld(key, time)
-
-        else:
-            return
+    def clearOld(self, time):
+        for seq in self.sequence.values():
+            if len(seq) > seqAcc:
+                seq.pop(0)
+        codes = [code for code in self.recentKeys.keys()]
+        for code in codes:
+            if self.recentKeys[code] < time - seqTimeout:
+                self.sequence[code] = []
+                self.timing[code] = 0
+                self.recentKeys[code] = 0
+                self.avgErr[code] = 0
 
     def addKey(self, key):
         if not self.sequence or key not in self.sequence.keys():
             self.sequence.update({key: []})
             self.timing.update({key: 0})
+            self.recentKeys.update({key: 0})
             self.avgErr.update({key: 0})
 
     def update(self, key, time):
@@ -467,7 +473,7 @@ class KeySequencer:
 
         self.addKey(key)
 
-        self.clearOld(key, time)
+        self.recentKeys[key] = time
 
         if len(self.timings) >= 2:
             self.sequence[key].append(self.timings[-1] - self.timings[-2])
@@ -490,6 +496,7 @@ class KeySequencer:
         self.timings = []
         self.avgErr = {}
         self.avg = 0
+        self.recentKeys = {}
 
 
 class KeyChange:
