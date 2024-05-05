@@ -3,7 +3,6 @@ from sys import exit
 from threading import Thread
 
 # screen size
-dim = (1500, 800)
 currDir = os.getcwd()
 if hasattr(sys, "_MEIPASS"):
     os.chdir(sys._MEIPASS)
@@ -16,6 +15,7 @@ defaultSettings = {
     "gap": -1,
     "--------- gap between them": None,
     "fps": 60,
+    "resolution": (1200, 700),
     "rainSpeed": 600,
     "accMaxTime": 15000,
     "--------- maximum time for kps to keep accumulating inputs": None,
@@ -51,24 +51,7 @@ defaultKeys = [[30, "a"],
                [38, "l"],
                [39, ";"]]
 
-stg = {
-    "resetKey": "right shift",
-    "size": 50,
-    "gap": -1,
-    "fps": 60,
-    "rainSpeed": 700,
-    "accMaxTime": 15000,
-    "accTimeout": 1000,
-    "seqTimeout": 20000,
-    "seqAcc": 20,
-    "heightMtp": 1,
-    "decPlaces": 2,
-    "gradientStart" : 300,  # height at which gradient starts hiding keys
-    "gradientHeight" : 70,
-    "colorDown": [140, 0, 0],
-    "colorUp": [100, 100, 100],
-    "rainColor": [100, 0, 0]
-}
+stg = defaultSettings
 path = currDir + "\\" + path
 keyPath = currDir + "\\" + keyPath
 
@@ -103,6 +86,7 @@ else:
     stg.update({"keys": defaultKeys})
     validity = False
 
+dim = stg["resolution"]
 keys = stg["keys"] if stg["keys"] else defaultKeys
 try:
     resetKey = [keyboard.key_to_scan_codes(stg["resetKey"])[0], stg["resetKey"]]  # key for instantly resetting all counters
@@ -536,7 +520,7 @@ def main():
     setup()
 
     vdtyCounter = None
-    vdtyTime = 2500 * 50 / fps
+    vdtyTime = 2 * fps
     if not validity:
         vdtyCounter = 0
 
@@ -554,7 +538,7 @@ def main():
         changeBtn.render()
         if vdtyCounter is not None:
             if vdtyCounter < vdtyTime:
-                opacity = 1 - ((vdtyCounter / vdtyTime) ** 8)
+                opacity = 1 - ((vdtyCounter / vdtyTime) ** 16)
                 vdtyCounter += 1
                 textRect = miscFont.render("Invalid json or doesnt exist! (settings.json / keys.json)", True,
                                            (255 * opacity, 255 * opacity, 255 * opacity))
